@@ -1,0 +1,115 @@
+# Arbor Hills Landfill – CSV Appending & Rolling Data Automation
+
+## 1. Project Overview
+This project automates the consolidation of daily landfill monitoring CSV data into a central Excel workbook used for tracking and analysis.
+
+It is designed for Green For Life (GFL)'s Arbor Hills Landfill monitoring workflow.
+
+### Features
+- Closes **all open Excel windows** before running to avoid file lock errors.
+- Reads new CSV files from a given folder.
+- Skips CSV files containing `"probe"` in their filename.
+- Cleans up CSV values:
+  - Converts `NR` / `NA` (case-insensitive) to blank cells.
+  - Converts `'>>>'` in `H2S_PPM` to `2001`.
+- Matches CSV columns to a master Excel sheet format.
+- Appends cleaned data to:
+  - `Appended_Data` sheet (with a blank row after each file).
+  - `rolling_data` sheet (subset of important columns).
+- Tracks already-processed files via the `Source_File` column.
+- Saves results back into the Excel file without overwriting other sheets.
+
+---
+
+## 2. Workflow
+
+### Stage 1 – User Prompt & Excel Shutdown
+Warns the user that all open Excel windows will be closed. Closes Excel to prevent file lock errors.
+
+### Stage 2 – Loading the Master Workbook
+Checks if the Excel file exists, loads `Appended_Data` and `rolling_data` if available.
+
+### Stage 3 – Identifying Eligible CSV Files
+Finds CSV files in the folder, skips ones already processed, skips probe files.
+
+### Stage 4 – Reading & Cleaning CSV Data
+- Replaces NR/NA → blank
+- Replaces >>> in H2S_PPM → 2001
+- Aligns CSV columns with master sheet
+
+### Stage 5 – Appending to DataFrames
+- Adds Source_File column
+- Appends CSV rows to Appended_Data
+- Adds matching columns to rolling_data
+
+### Stage 6 – Writing Back to Excel
+- Updates both sheets using openpyxl
+- Handles file permission errors
+
+---
+
+## 3. Key Python Logics Used
+
+| Logic | Purpose | Example |
+|-------|---------|---------|
+| win32com.client | Close Excel to prevent file lock issues | excel.Application.Quit() |
+| pandas.ExcelFile | Read multiple sheets from Excel | with pd.ExcelFile(file) |
+| DataFrame.replace() with regex | Replace placeholders like NR, NA, >>> | df.replace(...) |
+| Column filtering & alignment | Keep consistent structure in master sheet | [col for col in base_columns if col in df.columns] |
+| Conditional file skipping | Ignore probe files | if "probe" in filename.lower(): continue |
+| Appending a blank row | Separate datasets visually in Excel | pd.DataFrame({col: [None] for col in df.columns}) |
+
+---
+
+## 4. Detailed Code Explanation
+
+### Imports
+- `os` → File path operations.
+- `sys` → Script termination when needed.
+- `pandas` → CSV/Excel reading & manipulation.
+- `win32com.client` → COM interface to Excel.
+
+### Config
+Defines folder paths and columns for rolling data.
+
+### Functions
+**prompt_close_excel()**
+- Warns and prompts the user before closing Excel.
+
+**close_excel()**
+- Uses COM automation to quit Excel.
+
+### Main Logic
+1. Prompt and close Excel.
+2. Load existing Excel sheets into DataFrames.
+3. Build a set of already processed files.
+4. Loop through CSVs in folder:
+   - Skip if contains "probe"
+   - Skip if already processed
+   - Read CSV, clean data, align columns
+   - Append to `appended_df` and `rolling_df`
+5. Write updated DataFrames back to Excel.
+6. Print summary of processed files.
+
+---
+
+## 5. Installation
+```bash
+pip install pandas openpyxl pywin32
+```
+
+## 6. Usage
+1. Update `folder_path` and `appended_file_path` in script.
+2. Run the script:
+```bash
+python append_csv_to_excel.py
+```
+
+---
+
+## 7. Benefits
+- No manual copy-paste.
+- No duplicate entries.
+- Automated cleaning and formatting.
+- Faster daily updates.
+
