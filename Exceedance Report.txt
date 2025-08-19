@@ -1,0 +1,86 @@
+📊 Exceedance Reporting (Power BI)
+
+This visual provides a compliance tracker for landfill well monitoring, showing when each well reading goes out of parameter (e.g., negative pressure) and how long it remains non-compliant before resolution.
+
+🔎 Visual Overview
+
+Date Slicer (Top Left): Allows filtering of results by monitoring date range.
+Main Table: Displays well-level details for compliance analysis, including:
+Well_ID → Identifier of the monitored well.
+Date → Timestamp of the monitoring record.
+Parameter → Parameter being tracked (set to Pressure).
+Value → Recorded pressure value.
+Compliance Date → The next monitoring date when the well comes back into compliance.
+Resolved → Indicates whether the well was later resolved (Yes/No).
+5_day_due_date → Five-day compliance deadline based on the initial reading date.
+15_day_due_date → Extended 15-day compliance deadline.
+Days_Out_of_Parameter → Number of days the well remained non-compliant.
+
+This view enables operators to quickly see which wells are out of compliance, how long they have been out, and whether corrective action was taken.
+
+🧮 Calculated Columns Used
+
+15_day_due_date
+15_day_due_date = 'rolling_data'[Date] + 15
+
+Adds 15 days to the monitoring date to set the regulatory deadline for compliance.
+
+
+5_day_due_date
+5_day_due_date = 'rolling_data'[Date] + 5
+
+Adds 5 days to the monitoring date, representing a short-term follow-up deadline.
+
+Compliance Date
+
+Compliance Date = 
+VAR currWell = 'rolling_data'[Well_ID]
+VAR currDate = 'rolling_data'[Date]
+RETURN
+CALCULATE (
+    MIN ( 'rolling_data'[Date] ),
+    FILTER (
+        ALL ( 'rolling_data' ),
+        'rolling_data'[Well_ID] = currWell &&
+        'rolling_data'[Date] > currDate &&
+        'rolling_data'[Init_Static_P] < 0
+    )
+)
+Finds the earliest future reading date for the same well (currWell) where Init_Static_P is below 0 (indicating restored compliance).
+
+Days_Out_of_Parameter
+
+Days_Out_of_Parameter = 
+DATEDIFF ( 'rolling_data'[Date], 'rolling_data'[Compliance Date], DAY )
+
+Calculates the number of days a well remained out of compliance before the issue was resolved.
+
+
+
+Parameter
+Parameter = "Pressure"
+Hardcoded label so reports can clearly state which parameter the exceedance calculation is tracking.
+
+Resolved
+Resolved = 
+VAR currWell = 'rolling_data'[Well_ID]
+VAR currDate = 'rolling_data'[Date]
+RETURN
+IF (
+    CALCULATE (
+        COUNTROWS ( 'rolling_data' ),
+        FILTER (
+            'rolling_data',
+            'rolling_data'[Well_ID] = currWell &&
+            'rolling_data'[Date] > currDate &&
+            'rolling_data'[Init_Static_P] < 0
+        )
+    ) > 0,
+    "Yes",
+    "No"
+)
+
+
+Flags the reading as “Yes” if future monitoring data shows the well came back into compliance (pressure < 0).
+
+Otherwise marked “No”, meaning the exceedance is unresolved.
