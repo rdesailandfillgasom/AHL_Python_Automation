@@ -1,0 +1,97 @@
+# Power BI Reporting -- Arbor Hills Landfill Monitoring
+
+To complement the CSV-to-Excel automation, a Power BI reporting layerwas developed. These reports provide visibility into well performance,compliance deadlines, and monthly monitoring outcomes.
+
+## 🔗 Data Model Structure
+
+The model consists of four main tables:
+
+### Appended_Data
+
+-   Contains the complete dataset appended from daily CSV uploads.
+-   Includes raw and standardized parameters such as:
+    -   Gas concentrations: CH4_Percent, CO2_Percent, O2_Percent,
+        H2S_PPM
+    -   Pressures & flows: Adj_Static_P, Adj_Flow, Init_Diff_P
+    -   Temperatures: Init_Temperature_F, Final_Temperature_F,
+        Meter_Temperature
+    -   Operational metadata: Source_File, Technician, Instrument_ID,
+        Site
+-   Acts as the historical log, ensuring all readings are preserved and
+    traceable.
+
+### rolling_data
+
+-   A refined dataset optimized for compliance and trend analysis.
+-   Adds calculated and operational fields:
+    -   5_day_due_date, 15_day_due_date -- Compliance deadlines
+    -   Days_Out_of_Parameter -- Deviation tracker
+    -   Resolved, Technician, Valve_Comment, Well_Comment -- Issue
+        resolution metadata
+-   Focused on KPIs that drive daily and rolling compliance dashboards.
+
+### Monthly_Tracking
+
+-   Designed for regulatory and month-by-month compliance review.
+-   Stores well-level attributes and monthly performance:
+    -   Monthly columns (Jan--Dec) for compliance notes.
+    -   Well attributes: Well_ID, Well_Type, Wellhead_Size,
+        Wellhead_Type, Location.
+    -   Performance trackers: Completed_Wells, Pending_Wells, Status.
+-   Supports management-level compliance summaries and monthly MOR
+    reporting.
+
+### WellStatusLegend
+
+-   A small lookup/dimension table mapping:
+    -   Status → (e.g., Completed, Pending, Out of Compliance)
+    -   WellCount → Number of wells in that category.
+-   Used to simplify status-based visuals like KPI cards, donut charts,
+    and well status counts.
+
+
+## 🔗 Relationships
+
+-   **Appended_Data → rolling_data (Many-to-One)**\
+    Aligns raw readings with compliance-calculated rolling metrics.
+
+-   **rolling_data → Monthly_Tracking (Many-to-One)**\
+    Connects daily/rolling data to structured monthly compliance logs.
+
+-   **Monthly_Tracking → WellStatusLegend (Many-to-One)**\
+    Enables reporting of well completion status against predefined
+    categories.
+
+## 📈 Report Outputs
+
+The Power BI dashboards built on this model include:
+
+### Compliance Dashboard
+
+-   Tracks wells approaching/exceeding 5_day_due_date and
+    15_day_due_date.
+-   Shows "Pending vs. Completed Wells" using the WellStatusLegend.
+
+### Gas Composition & Trends
+
+-   Line charts for methane (CH4%), oxygen, CO2, and H2S_PPM over time.
+-   Identifies anomalies and wells exceeding thresholds.
+
+### Pressure & Flow Insights
+
+-   Monitoring of Adj_Static_P, Adj_Flow, and differential pressures.
+-   Detects system imbalances and operational issues.
+
+### Monthly Tracking & MOR Alignment
+
+-   Tables summarizing well activity by month (Jan--Dec).
+-   Integrated with fields like Completed_Wells, Pending_Wells, Status
+    for regulatory submissions.
+
+## 🚀 Key Value
+
+-   **Operational Monitoring:** Detects compliance risks early (due
+    dates, parameter exceedances).\
+-   **Regulatory Reporting:** Provides ready-to-submit MOR summaries.\
+-   **Transparency:** Links raw data (CSV → Appended_Data) through
+    compliance metrics (rolling_data) into monthly executive dashboards.
