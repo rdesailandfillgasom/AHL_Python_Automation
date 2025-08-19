@@ -1,0 +1,66 @@
+📊 Monthly Tracker (Well Status Reporting)
+
+This page provides a high-level compliance summary of wells, showing whether they have been completed or remain pending during the selected reporting period.
+
+🔎 Visual Overview
+
+Date Slicer (Top Left): Filters results by the selected monitoring date range.
+Well_ID Table (Left): Lists each well alongside its current status (Completed / Pending).
+Pie Chart (Right): Displays the WellCount by Status, showing the proportion of completed vs. pending wells.
+
+This layout gives both granular detail (well-level status) and a visual summary (status distribution).
+
+🧮 Calculated Columns & Measures
+
+WellStatusLegend
+
+WellStatusLegend = 
+DATATABLE(
+    "Status", STRING,
+    {
+        {"Completed"},
+        {"Pending"}
+    }
+)
+
+
+A static dimension table containing the two status categories: Completed and Pending.
+Provides a clean reference for visuals like the pie chart and slicers.
+
+WellCount
+
+WellCount = 
+SWITCH(
+    SELECTEDVALUE(WellStatusLegend[Status]),
+    "Completed", [Completed Wells],
+    "Pending", [Pending Wells]
+)
+
+
+Dynamically returns the number of wells by status:
+If status = Completed → returns [Completed Wells] measure.
+If status = Pending → returns [Pending Wells] measure.
+Drives the pie chart visualization of well counts by category.
+
+Status (per Well_ID)
+
+Status = 
+VAR _WellID = SELECTEDVALUE( 'Monthly_Tracking'[Well_ID] )
+VAR _Match =
+    CALCULATE(
+        COUNTROWS( 'rolling_data' ),
+        'rolling_data'[Well_ID] = _WellID
+    )
+RETURN
+IF( _Match > 0, "Completed", "Pending" )
+
+
+Assigns a status label for each well in the Monthly_Tracking table:
+If the well has matching records in rolling_data → Completed.
+If no matching records are found → Pending.
+Populates the Well_ID vs. Status table in the report.
+
+🚀 Value of This Report
+Quick Compliance Snapshot: Managers can instantly see how many wells are completed vs. pending.
+Actionable Drill-Down: Users can click into pending wells to prioritize corrective action.
+Integrated Monitoring: Links operational well data (rolling_data) to monthly compliance reporting (Monthly_Tracking).
